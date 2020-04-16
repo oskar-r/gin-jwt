@@ -287,11 +287,12 @@ func (mw *GinJWTMiddleware) MiddlewareInit() error {
 	}
 
 	if mw.LoginResponse == nil {
-		mw.LoginResponse = func(c *gin.Context, code int, token string, expire time.Time) {
+		mw.LoginResponse = func(c *gin.Context, code int, token string, acccessCode string, expire time.Time) {
 			c.JSON(http.StatusOK, gin.H{
-				"code":   http.StatusOK,
-				"token":  token,
-				"expire": expire.Format(time.RFC3339),
+				"code":        http.StatusOK,
+				"token":       token,
+				"expire":      expire.Format(time.RFC3339),
+				"access_code": acccessCode,
 			})
 		}
 	}
