@@ -1,6 +1,6 @@
 module github.com/oskar-r/gin-jwt/v2
 
-go 1.14
+go 1.12
 
 require (
 	github.com/appleboy/gofight/v2 v2.1.2
