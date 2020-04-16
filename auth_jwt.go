@@ -3,6 +3,7 @@ package jwt
 import (
 	"crypto/rsa"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -63,7 +64,7 @@ type GinJWTMiddleware struct {
 	Unauthorized func(*gin.Context, int, string)
 
 	// User can define own LoginResponse func.
-	LoginResponse func(*gin.Context, int, string, time.Time)
+	LoginResponse func(*gin.Context, int, string, string, time.Time)
 
 	// User can define own LogoutResponse func.
 	LogoutResponse func(*gin.Context, int)
@@ -424,6 +425,7 @@ func (mw *GinJWTMiddleware) LoginHandler(c *gin.Context) {
 		mw.unauthorized(c, http.StatusInternalServerError, mw.HTTPStatusMessageFunc(ErrMissingAuthenticatorFunc, c))
 		return
 	}
+	var accessToken string
 
 	data, err := mw.Authenticator(c)
 
@@ -438,6 +440,9 @@ func (mw *GinJWTMiddleware) LoginHandler(c *gin.Context) {
 
 	if mw.PayloadFunc != nil {
 		for key, value := range mw.PayloadFunc(data) {
+			if key == "access_token" {
+				accessToken = fmt.Sprintf("%s", value)
+			}
 			claims[key] = value
 		}
 	}
@@ -466,7 +471,7 @@ func (mw *GinJWTMiddleware) LoginHandler(c *gin.Context) {
 		)
 	}
 
-	mw.LoginResponse(c, http.StatusOK, tokenString, expire)
+	mw.LoginResponse(c, http.StatusOK, tokenString, accessToken, expire)
 }
 
 // LogoutHandler can be used by clients to remove the jwt cookie (if set)
