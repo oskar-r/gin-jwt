@@ -229,12 +229,12 @@ func TestLoginHandler(t *testing.T) {
 			}
 
 			c.JSON(http.StatusOK, gin.H{
-				"code":         http.StatusOK,
-				"token":        token,
-				"expire":       t.Format(time.RFC3339),
-				"message":      "login successfully",
-				"cookie":       cookie,
-				"access_token": accessToken,
+				"code":        http.StatusOK,
+				"token":       token,
+				"expire":      t.Format(time.RFC3339),
+				"message":     "login successfully",
+				"cookie":      cookie,
+				"access_code": accessToken,
 			})
 		},
 		SendCookie: true,
