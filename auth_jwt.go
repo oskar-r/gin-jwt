@@ -482,7 +482,7 @@ func (mw *GinJWTMiddleware) LoginHandler(c *gin.Context) {
 			mw.CookieHTTPOnly,
 		)
 
-		if accessToken.len > 0 {
+		if len(accessToken) > 0 {
 			c.SetCookie(
 				"access_code",
 				accessToken,
