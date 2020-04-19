@@ -481,6 +481,18 @@ func (mw *GinJWTMiddleware) LoginHandler(c *gin.Context) {
 			mw.SecureCookie,
 			mw.CookieHTTPOnly,
 		)
+
+		if accessToken.len > 0 {
+			c.SetCookie(
+				"access_code",
+				accessToken,
+				maxage,
+				"/",
+				mw.CookieDomain,
+				mw.SecureCookie,
+				mw.CookieHTTPOnly,
+			)
+		}
 	}
 
 	mw.LoginResponse(c, http.StatusOK, tokenString, accessToken, expire)
