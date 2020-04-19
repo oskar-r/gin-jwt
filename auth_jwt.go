@@ -53,7 +53,7 @@ type GinJWTMiddleware struct {
 	Authorizator func(data interface{}, c *gin.Context) bool
 
 	//Callback function to handel a refresh based on an access code. Returns true if access code is valid to proceed with generation of new token
-	AccessCodeValidator func(c *gin.Context, data interface{}) (bool, error)
+	AccessCodeValidator func(c *gin.Context) (bool, error)
 
 	// Callback function that will be called during login.
 	// Using this function it is possible to add additional payload data to the webtoken.
@@ -194,6 +194,8 @@ var (
 
 	// IdentityKey default identity key
 	IdentityKey = "identity"
+
+	ErrAccessCodeNotValid = errors.New("Access code not valid")
 )
 
 // New for check error with GinJWTMiddleware
@@ -282,7 +284,7 @@ func (mw *GinJWTMiddleware) MiddlewareInit() error {
 	}
 
 	if mw.AccessCodeValidator == nil {
-		mw.AccessCodeValidator = func(c *gin.Context, data interface{}) (bool, error) {
+		mw.AccessCodeValidator = func(c *gin.Context) (bool, error) {
 			return true, nil
 		}
 	}
@@ -517,6 +519,12 @@ func (mw *GinJWTMiddleware) signedString(token *jwt.Token) (string, error) {
 // Shall be put under an endpoint that is using the GinJWTMiddleware.
 // Reply will be of the form {"token": "TOKEN"}.
 func (mw *GinJWTMiddleware) RefreshHandler(c *gin.Context) {
+	ok, err := mw.AccessCodeValidator(c)
+	if err != nil || !ok {
+		mw.unauthorized(c, http.StatusUnauthorized, mw.HTTPStatusMessageFunc(err, c))
+		return
+	}
+
 	tokenString, expire, err := mw.RefreshToken(c)
 	if err != nil {
 		mw.unauthorized(c, http.StatusUnauthorized, mw.HTTPStatusMessageFunc(err, c))
