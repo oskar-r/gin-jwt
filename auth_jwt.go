@@ -53,7 +53,7 @@ type GinJWTMiddleware struct {
 	Authorizator func(data interface{}, c *gin.Context) bool
 
 	//Callback function to handel a refresh based on an access code. Returns true if access code is valid to proceed with generation of new token
-	AccessCodeValidator func(c *gin.Context, accessToken string) (bool, error)
+	AccessCodeValidator func(c *gin.Context, data interface{}) (bool, error)
 
 	// Callback function that will be called during login.
 	// Using this function it is possible to add additional payload data to the webtoken.
@@ -282,7 +282,7 @@ func (mw *GinJWTMiddleware) MiddlewareInit() error {
 	}
 
 	if mw.AccessCodeValidator == nil {
-		mw.AccessCodeValidator = func(c *gin.Context, accessCode string) (bool, error) {
+		mw.AccessCodeValidator = func(c *gin.Context, data interface{}) (bool, error) {
 			return true, nil
 		}
 	}
