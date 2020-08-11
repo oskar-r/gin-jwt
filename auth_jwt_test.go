@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -200,6 +201,8 @@ func TestMissingAuthenticatorForLoginHandler(t *testing.T) {
 func TestLoginHandler(t *testing.T) {
 
 	// the middleware to test
+	cookieName := "jwt"
+	cookieDomain := "example.com"
 	authMiddleware, err := New(&GinJWTMiddleware{
 		Realm: "test zone",
 		Key:   key,
@@ -237,7 +240,10 @@ func TestLoginHandler(t *testing.T) {
 				"access_code": accessToken,
 			})
 		},
-		SendCookie: true,
+		SendCookie:   true,
+		CookieName:   cookieName,
+		CookieDomain: cookieDomain,
+		TimeFunc:     func() time.Time { return time.Now().Add(time.Duration(5) * time.Minute) },
 	})
 
 	assert.NoError(t, err)
@@ -270,19 +276,16 @@ func TestLoginHandler(t *testing.T) {
 		})
 
 	r.POST("/login").
-		SetCookie(gofight.H{
-			"jwt": "jwt",
-		}).
 		SetJSON(gofight.D{
 			"username": "admin",
 			"password": "admin",
 		}).
 		Run(handler, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			message := gjson.Get(r.Body.String(), "message")
-			cookie := gjson.Get(r.Body.String(), "cookie")
 			assert.Equal(t, "login successfully", message.String())
 			assert.Equal(t, http.StatusOK, r.Code)
-			assert.Equal(t, "jwt", cookie.String())
+			assert.True(t, strings.HasPrefix(r.HeaderMap.Get("Set-Cookie"), "jwt="))
+			assert.True(t, strings.HasSuffix(r.HeaderMap.Get("Set-Cookie"), "; Path=/; Domain=example.com; Max-Age=3600"))
 		})
 }
 

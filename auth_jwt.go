@@ -26,7 +26,7 @@ type GinJWTMiddleware struct {
 	// Realm name to display to the user. Required.
 	Realm string
 
-	// signing algorithm - possible values are HS256, HS384, HS512
+	// signing algorithm - possible values are HS256, HS384, HS512, RS256, RS384 or RS512
 	// Optional, default is HS256.
 	SigningAlgorithm string
 
@@ -115,6 +115,9 @@ type GinJWTMiddleware struct {
 	// Optionally return the token as a cookie
 	SendCookie bool
 
+	// Duration that a cookie is valid. Optional, by default equals to Timeout value.
+	CookieMaxAge time.Duration
+
 	// Allow insecure cookies for development over http
 	SecureCookie bool
 
@@ -132,6 +135,9 @@ type GinJWTMiddleware struct {
 
 	// CookieName allow cookie name change for development
 	CookieName string
+
+	// CookieSameSite allow use http.SameSite cookie param
+	CookieSameSite http.SameSite
 }
 
 var (
@@ -348,6 +354,10 @@ func (mw *GinJWTMiddleware) MiddlewareInit() error {
 		mw.Realm = "gin jwt"
 	}
 
+	if mw.CookieMaxAge == 0 {
+		mw.CookieMaxAge = mw.Timeout
+	}
+
 	if mw.CookieName == "" {
 		mw.CookieName = "jwt"
 	}
@@ -471,7 +481,13 @@ func (mw *GinJWTMiddleware) LoginHandler(c *gin.Context) {
 
 	// set cookie
 	if mw.SendCookie {
-		maxage := int(expire.Unix() - time.Now().Unix())
+		expireCookie := mw.TimeFunc().Add(mw.CookieMaxAge)
+		maxage := int(expireCookie.Unix() - mw.TimeFunc().Unix())
+
+		if mw.CookieSameSite != 0 {
+			c.SetSameSite(mw.CookieSameSite)
+		}
+
 		c.SetCookie(
 			mw.CookieName,
 			tokenString,
@@ -502,6 +518,10 @@ func (mw *GinJWTMiddleware) LoginHandler(c *gin.Context) {
 func (mw *GinJWTMiddleware) LogoutHandler(c *gin.Context) {
 	// delete auth cookie
 	if mw.SendCookie {
+		if mw.CookieSameSite != 0 {
+			c.SetSameSite(mw.CookieSameSite)
+		}
+
 		c.SetCookie(
 			mw.CookieName,
 			"",
@@ -572,7 +592,13 @@ func (mw *GinJWTMiddleware) RefreshToken(c *gin.Context) (string, time.Time, err
 
 	// set cookie
 	if mw.SendCookie {
-		maxage := int(expire.Unix() - time.Now().Unix())
+		expireCookie := mw.TimeFunc().Add(mw.CookieMaxAge)
+		maxage := int(expireCookie.Unix() - time.Now().Unix())
+
+		if mw.CookieSameSite != 0 {
+			c.SetSameSite(mw.CookieSameSite)
+		}
+
 		c.SetCookie(
 			mw.CookieName,
 			tokenString,
